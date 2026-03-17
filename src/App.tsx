@@ -1,19 +1,28 @@
 // Main Application Component
 
 import { useState, useMemo, useCallback } from 'react';
-import { MantineProvider, Box, Grid, Stack, SegmentedControl, Group } from '@mantine/core';
+import {
+  MantineProvider,
+  AppShell,
+  Box,
+  Stack,
+  Group,
+  Paper,
+  Drawer,
+} from '@mantine/core';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import '@mantine/core/styles.css';
 import { theme } from './config/theme';
 import { useAppState } from './hooks/useAppState';
 import { generateDownloadText } from './hooks/useTokenizer';
-import { 
-  buildCooccurrenceGraph, 
-  filterGraph, 
+import {
+  buildCooccurrenceGraph,
+  filterGraph,
   getGraphStats,
   detectPunctuation,
 } from './hooks/useGraphBuilder';
 import { Header } from './components/Header';
-import { Instructions } from './components/Instructions';
+import { Sidebar, PageType } from './components/Sidebar';
 import { CorpusPanel } from './components/CorpusPanel';
 import { TextInputPanel } from './components/TextInputPanel';
 import { WordCloudPanel } from './components/WordCloudPanel';
@@ -21,16 +30,15 @@ import { StopwordsPanel } from './components/StopwordsPanel';
 import { GraphSettingsPanel } from './components/GraphSettingsPanel';
 import { ForceGraph } from './components/ForceGraph';
 import { StopwordLanguage } from './data/stopwords';
-import { getGraphTranslation } from './config/i18n-graph';
-import { 
-  NGramConfig, 
-  GraphDisplayConfig, 
+import {
+  NGramConfig,
+  GraphDisplayConfig,
   GraphData,
   defaultNGramConfig,
   defaultGraphDisplayConfig,
 } from './types/graph';
 
-type ViewMode = 'corpus' | 'graph';
+const PADDING = 20; // px gap from viewport edge (all sides)
 
 function App() {
   const {
@@ -52,86 +60,50 @@ function App() {
     stats,
     resetAll,
   } = useAppState();
-  
-  // View mode state
-  const [viewMode, setViewMode] = useState<ViewMode>('corpus');
-  
-  // Graph configuration state
+
+  const [mobileNavOpened, { toggle: toggleMobileNav, close: closeMobileNav }] = useDisclosure(false);
+  const isMobile = useMediaQuery('(max-width: 768px)') ?? false;
+  const [activePage, setActivePage] = useState<PageType>('stopwords');
+
   const [ngramConfig, setNgramConfig] = useState<NGramConfig>(defaultNGramConfig);
   const [displayConfig, setDisplayConfig] = useState<GraphDisplayConfig>(defaultGraphDisplayConfig);
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
-  
-  // Get graph translations
-  const gt = getGraphTranslation(uiLanguage);
-  
-  // Detect available punctuation in text
-  const availablePunctuation = useMemo(() => {
-    return detectPunctuation(tokens);
-  }, [tokens]);
-  
-  // Generate graph when requested
+
+  const availablePunctuation = useMemo(() => detectPunctuation(tokens), [tokens]);
+
   const handleGenerateGraph = useCallback(() => {
     const fullGraph = buildCooccurrenceGraph(tokens, ngramConfig);
     setGraphData(fullGraph);
-    setViewMode('graph');
   }, [tokens, ngramConfig]);
-  
-  // Filter graph based on display config
-  const filteredGraph = useMemo(() => {
-    return filterGraph(
-      graphData,
-      displayConfig.minEdgeWeight,
-      displayConfig.minNodeFrequency
-    );
-  }, [graphData, displayConfig.minEdgeWeight, displayConfig.minNodeFrequency]);
-  
-  // Get graph statistics
-  const graphStats = useMemo(() => {
-    if (filteredGraph.nodes.length === 0) return null;
-    return getGraphStats(filteredGraph);
-  }, [filteredGraph]);
-  
-  // Handle word click in corpus - toggle stopword status
+
+  const filteredGraph = useMemo(
+    () => filterGraph(graphData, displayConfig.minEdgeWeight, displayConfig.minNodeFrequency),
+    [graphData, displayConfig.minEdgeWeight, displayConfig.minNodeFrequency]
+  );
+
+  const graphStats = useMemo(
+    () => (filteredGraph.nodes.length === 0 ? null : getGraphStats(filteredGraph)),
+    [filteredGraph]
+  );
+
   const handleCorpusWordClick = (word: string) => {
     const normalized = word.toLowerCase();
-    if (stopwords.has(normalized)) {
-      removeStopword(normalized);
-    } else {
-      addStopword(normalized);
-    }
+    if (stopwords.has(normalized)) removeStopword(normalized);
+    else addStopword(normalized);
   };
-  
-  // Handle word click in word cloud - add to stopwords
-  const handleCloudWordClick = (word: string) => {
-    addStopword(word);
-  };
-  
-  // Handle word click in stopwords panel - remove from stopwords
-  const handleStopwordClick = (word: string) => {
-    removeStopword(word);
-  };
-  
-  // Handle file upload
+
   const handleFileUpload = (file: File | null) => {
     if (!file) return;
-    
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      setRawText(text);
-      // Reset graph when new text is loaded
+      setRawText(e.target?.result as string);
       setGraphData({ nodes: [], edges: [] });
     };
     reader.readAsText(file);
   };
-  
-  // Download stopwords as text file
+
   const handleDownloadStopwords = () => {
-    const content = stopwordList
-      .map(item => item.word)
-      .sort()
-      .join('\n');
-    
+    const content = stopwordList.map((item) => item.word).sort().join('\n');
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -142,12 +114,9 @@ function App() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  
-  // Download cleaned text
+
   const handleDownloadText = () => {
-    const cleanedText = generateDownloadText(tokens);
-    
-    const blob = new Blob([cleanedText], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([generateDownloadText(tokens)], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -157,131 +126,193 @@ function App() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  
-  // Handle full reset
+
   const handleReset = () => {
     resetAll();
     setGraphData({ nodes: [], edges: [] });
-    setViewMode('corpus');
+    setActivePage('stopwords');
+    closeMobileNav();
   };
-  
+
+  const handlePageChange = (page: PageType) => {
+    setActivePage(page);
+    closeMobileNav();
+  };
+
+  const sidebarContent = (
+    <Sidebar
+      activePage={activePage}
+      onPageChange={handlePageChange}
+      onReset={handleReset}
+      uiLanguage={uiLanguage}
+    />
+  );
+
   return (
     <MantineProvider theme={theme} defaultColorScheme="light">
-      <Box style={{ minHeight: '100vh', backgroundColor: '#f5f7f6' }}>
-        {/* Header */}
-        <Header
-          uiLanguage={uiLanguage}
-          setUILanguage={setUILanguage}
-          onReset={handleReset}
-        />
-        
-        {/* Main Content */}
-        <Box p="md">
-          <Stack gap="md">
-            {/* Instructions with View Toggle */}
-            <Group justify="space-between" align="flex-start">
-              <Box style={{ flex: 1 }}>
-                <Instructions uiLanguage={uiLanguage} stats={stats} />
-              </Box>
-              
-              {/* View Mode Toggle */}
-              {rawText && (
-                <SegmentedControl
-                  value={viewMode}
-                  onChange={(value) => setViewMode(value as ViewMode)}
-                  data={[
-                    { label: gt.showCorpus, value: 'corpus' },
-                    { label: gt.showGraph, value: 'graph' },
-                  ]}
-                  color="teal"
-                />
-              )}
-            </Group>
-            
-            {/* Main Content Grid */}
-            <Grid gutter="md">
-              {/* Left Panel - Corpus or Graph */}
-              <Grid.Col span={7}>
-                <Box style={{ height: 'calc(100vh - 220px)' }}>
-                  {viewMode === 'corpus' ? (
-                    rawText ? (
-                      <CorpusPanel
-                        tokens={tokens}
-                        placeholderStyle={placeholderStyle}
-                        onPlaceholderStyleChange={setPlaceholderStyle}
-                        onWordClick={handleCorpusWordClick}
-                        onFileUpload={handleFileUpload}
-                        onDownloadText={handleDownloadText}
-                        hasText={rawText.length > 0}
-                        uiLanguage={uiLanguage}
-                      />
-                    ) : (
-                      <TextInputPanel
-                        value={rawText}
-                        onChange={setRawText}
-                        onFileUpload={handleFileUpload}
-                        uiLanguage={uiLanguage}
-                      />
-                    )
-                  ) : (
-                    <ForceGraph
-                      data={filteredGraph}
-                      displayConfig={displayConfig}
-                      uiLanguage={uiLanguage}
-                    />
-                  )}
+      {/* AppShell without a fixed header — everything lives inside Main */}
+      <AppShell padding={PADDING}>
+        <AppShell.Main style={{ backgroundColor: '#f5f7f6' }}>
+          {/* Full-height flex column that fills the padded viewport */}
+          <Box
+            style={{
+              height: `calc(100vh - ${PADDING * 2}px)`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--mantine-spacing-md)',
+            }}
+          >
+            {/* ── Title bar (rounded box) ── */}
+            <Paper
+              shadow="sm"
+              radius="md"
+              style={{
+                backgroundColor: '#003835',
+                flexShrink: 0,
+                overflow: 'hidden',
+              }}
+            >
+              <Header
+                uiLanguage={uiLanguage}
+                setUILanguage={setUILanguage}
+                mobileNavOpened={mobileNavOpened}
+                toggleMobileNav={toggleMobileNav}
+              />
+            </Paper>
+
+            {/* Mobile nav drawer */}
+            <Drawer
+              opened={mobileNavOpened}
+              onClose={closeMobileNav}
+              size={240}
+              padding="md"
+              title={uiLanguage === 'de' ? 'Navigation' : 'Navigation'}
+            >
+              {sidebarContent}
+            </Drawer>
+
+            {/* ── Content row (fills remaining height) ── */}
+            <Box style={{ flex: 1, minHeight: 0 }}>
+              <Group align="flex-start" gap="md" wrap="nowrap" style={{ height: '100%' }}>
+
+                {/* Sidebar box – visible on sm+ */}
+                <Box visibleFrom="sm" style={{ width: 220, flexShrink: 0, height: '100%' }}>
+                  <Paper
+                    shadow="sm"
+                    radius="md"
+                    style={{
+                      height: '100%',
+                      border: '1px solid #b7c8c1',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
+                  >
+                    {sidebarContent}
+                  </Paper>
                 </Box>
-              </Grid.Col>
-              
-              {/* Right Panel - depends on view mode */}
-              <Grid.Col span={5}>
-                <Stack gap="md" style={{ height: 'calc(100vh - 220px)' }}>
-                  {viewMode === 'corpus' ? (
-                    <>
-                      {/* Word Cloud */}
-                      <Box style={{ flex: 1, minHeight: 0 }}>
-                        <WordCloudPanel
-                          words={visibleWordFrequencies}
-                          onWordClick={handleCloudWordClick}
-                          uiLanguage={uiLanguage}
-                        />
+
+                {/* Main content */}
+                <Box style={{ flex: 1, minWidth: 0, height: '100%' }}>
+                  {activePage === 'stopwords' ? (
+                    /* ── Wortausschluss ── */
+                    <Stack gap="sm" style={{ height: '100%' }}>
+                      {/* CSS Grid for correct height propagation; stack on mobile */}
+                      <Box
+                        style={{
+                          flex: 1,
+                          minHeight: 0,
+                          display: 'grid',
+                          gridTemplateColumns: isMobile ? '1fr' : '7fr 5fr',
+                          gridTemplateRows: isMobile ? 'auto' : '1fr',
+                          gap: 'var(--mantine-spacing-md)',
+                        }}
+                      >
+                        <Box style={{ minWidth: 0, minHeight: isMobile ? 500 : 0 }}>
+                          {rawText ? (
+                            <CorpusPanel
+                              tokens={tokens}
+                              placeholderStyle={placeholderStyle}
+                              onPlaceholderStyleChange={setPlaceholderStyle}
+                              onWordClick={handleCorpusWordClick}
+                              onFileUpload={handleFileUpload}
+                              onDownloadText={handleDownloadText}
+                              hasText={rawText.length > 0}
+                              uiLanguage={uiLanguage}
+                              stats={stats}
+                            />
+                          ) : (
+                            <TextInputPanel
+                              value={rawText}
+                              onChange={setRawText}
+                              onFileUpload={handleFileUpload}
+                              uiLanguage={uiLanguage}
+                            />
+                          )}
+                        </Box>
+
+                        <Stack gap="md" style={{ minWidth: 0 }}>
+                          <Box style={{ flex: 1, minHeight: isMobile ? 300 : 0 }}>
+                            <WordCloudPanel
+                              words={visibleWordFrequencies}
+                              onWordClick={addStopword}
+                              uiLanguage={uiLanguage}
+                            />
+                          </Box>
+                          <Box style={{ flex: 1, minHeight: isMobile ? 300 : 0 }}>
+                            <StopwordsPanel
+                              stopwords={stopwordList}
+                              onWordClick={removeStopword}
+                              viewMode={stopwordViewMode}
+                              setViewMode={setStopwordViewMode}
+                              onLoadStandardList={(lang: StopwordLanguage) => loadStandardStopwords(lang)}
+                              onDownloadStopwords={handleDownloadStopwords}
+                              uiLanguage={uiLanguage}
+                            />
+                          </Box>
+                        </Stack>
                       </Box>
-                      
-                      {/* Stopwords */}
-                      <Box style={{ flex: 1, minHeight: 0 }}>
-                        <StopwordsPanel
-                          stopwords={stopwordList}
-                          onWordClick={handleStopwordClick}
-                          viewMode={stopwordViewMode}
-                          setViewMode={setStopwordViewMode}
-                          onLoadStandardList={(lang: StopwordLanguage) => loadStandardStopwords(lang)}
-                          onDownloadStopwords={handleDownloadStopwords}
-                          uiLanguage={uiLanguage}
-                        />
-                      </Box>
-                    </>
+                    </Stack>
                   ) : (
-                    /* Graph Settings */
-                    <Box style={{ height: '100%' }}>
-                      <GraphSettingsPanel
-                        uiLanguage={uiLanguage}
-                        ngramConfig={ngramConfig}
-                        displayConfig={displayConfig}
-                        availablePunctuation={availablePunctuation}
-                        graphStats={graphStats}
-                        onNgramConfigChange={setNgramConfig}
-                        onDisplayConfigChange={setDisplayConfig}
-                        onGenerateGraph={handleGenerateGraph}
-                        hasTokens={tokens.length > 0}
-                      />
+                    /* ── Visualisierung ── */
+                    <Box
+                      style={{
+                        height: '100%',
+                        display: 'grid',
+                        gridTemplateColumns: isMobile ? '1fr' : '7fr 5fr',
+                        gridTemplateRows: isMobile ? 'auto' : '1fr',
+                        gap: 'var(--mantine-spacing-md)',
+                      }}
+                    >
+                      <Box style={{ minWidth: 0, minHeight: isMobile ? 500 : 0 }}>
+                        <ForceGraph
+                          data={filteredGraph}
+                          displayConfig={displayConfig}
+                          uiLanguage={uiLanguage}
+                        />
+                      </Box>
+
+                      <Box style={{ minWidth: 0, overflowY: 'auto' }}>
+                        <GraphSettingsPanel
+                          uiLanguage={uiLanguage}
+                          ngramConfig={ngramConfig}
+                          displayConfig={displayConfig}
+                          availablePunctuation={availablePunctuation}
+                          graphStats={graphStats}
+                          onNgramConfigChange={setNgramConfig}
+                          onDisplayConfigChange={setDisplayConfig}
+                          onGenerateGraph={handleGenerateGraph}
+                          hasTokens={tokens.length > 0}
+                        />
+                      </Box>
                     </Box>
                   )}
-                </Stack>
-              </Grid.Col>
-            </Grid>
-          </Stack>
-        </Box>
-      </Box>
+                </Box>
+              </Group>
+            </Box>
+          </Box>
+        </AppShell.Main>
+      </AppShell>
     </MantineProvider>
   );
 }

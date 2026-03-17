@@ -85,6 +85,7 @@ export const GraphSettingsPanel = ({
   return (
     <Paper
       shadow="sm"
+      radius="md"
       style={{
         height: '100%',
         display: 'flex',
@@ -98,6 +99,7 @@ export const GraphSettingsPanel = ({
         style={{
           borderBottom: '1px solid #b7c8c1',
           backgroundColor: '#f8faf9',
+          borderRadius: 'var(--mantine-radius-md) var(--mantine-radius-md) 0 0',
         }}
       >
         <Title order={4} style={{ color: '#003835' }}>

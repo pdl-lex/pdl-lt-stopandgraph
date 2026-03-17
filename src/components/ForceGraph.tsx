@@ -284,11 +284,13 @@ export const ForceGraph = ({
   return (
     <Paper
       shadow="sm"
+      radius="md"
       style={{
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         border: '1px solid #b7c8c1',
+        overflow: 'hidden',
       }}
     >
       <Box
@@ -296,6 +298,7 @@ export const ForceGraph = ({
         style={{
           borderBottom: '1px solid #b7c8c1',
           backgroundColor: '#f8faf9',
+          borderRadius: 'var(--mantine-radius-md) var(--mantine-radius-md) 0 0',
         }}
       >
         <Group justify="space-between" align="center">

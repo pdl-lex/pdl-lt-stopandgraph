@@ -1,107 +1,90 @@
-// Header Component with title, language selector, and menu
+// Header Component - slim bar matching LexoTerm design
 
-import { 
-  Group, 
-  Title, 
-  Select, 
-  Menu, 
-  ActionIcon,
-  Box,
-} from '@mantine/core';
+import { Group, Title, Select, Box, Burger } from '@mantine/core';
 import { UILanguage, getTranslation } from '../config/i18n';
 
 interface HeaderProps {
   uiLanguage: UILanguage;
   setUILanguage: (lang: UILanguage) => void;
-  onReset: () => void;
+  mobileNavOpened: boolean;
+  toggleMobileNav: () => void;
 }
+
+const AppLogoIcon = () => (
+  <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+    <circle cx="10" cy="16" r="3.5" fill="#b7c8c1" />
+    <circle cx="24" cy="8" r="3.5" fill="#b7c8c1" />
+    <circle cx="24" cy="24" r="3.5" fill="#b7c8c1" />
+    <line x1="13.2" y1="15" x2="20.8" y2="9.6" stroke="#b7c8c1" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="13.2" y1="17" x2="20.8" y2="22.4" stroke="#b7c8c1" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
 
 export const Header = ({
   uiLanguage,
   setUILanguage,
-  onReset,
+  mobileNavOpened,
+  toggleMobileNav,
 }: HeaderProps) => {
   const t = getTranslation(uiLanguage);
-  
-  const languageOptions = [
-    { value: 'de', label: 'Deutsch' },
-    { value: 'en', label: 'English' },
-  ];
-  
+
   return (
     <Box
       style={{
-        background: 'linear-gradient(135deg, #003835 0%, #006844 100%)',
-        padding: '1rem 1.5rem',
-        borderBottom: '1px solid rgba(183, 200, 193, 0.2)',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '10px 16px',
       }}
     >
-      <Group justify="space-between" align="center">
-        <Title 
-          order={1} 
-          style={{ 
-            color: '#fff',
-            fontSize: '1.5rem',
-            fontWeight: 600,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          {t.appTitle}
-        </Title>
-        
-        <Group gap="md">
-          {/* UI Language */}
+      <Group justify="space-between" align="center" style={{ width: '100%' }}>
+        {/* Left: logo + title */}
+        <Group gap="sm" align="center">
+          <AppLogoIcon />
+          <Title
+            order={1}
+            style={{
+              color: '#fff',
+              fontSize: '1.05rem',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+              lineHeight: 1,
+            }}
+          >
+            {t.appTitle}
+          </Title>
+        </Group>
+
+        {/* Right: language select + mobile burger */}
+        <Group gap="sm" align="center">
           <Select
-            size="sm"
-            label={t.languageSelect}
+            size="xs"
             value={uiLanguage}
-            onChange={(value) => setUILanguage(value as UILanguage)}
-            data={languageOptions}
+            onChange={(value) => value && setUILanguage(value as UILanguage)}
+            data={[
+              { value: 'de', label: 'DE' },
+              { value: 'en', label: 'EN' },
+            ]}
             styles={{
-              label: { color: '#b7c8c1', fontSize: '0.75rem', marginBottom: 4 },
-              input: { 
+              input: {
                 backgroundColor: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(183, 200, 193, 0.3)',
                 color: '#fff',
+                minHeight: 28,
+                height: 28,
+                padding: '0 28px 0 10px',
               },
             }}
-            w={120}
+            w={62}
+            comboboxProps={{ withinPortal: true }}
           />
-          
-          {/* Menu */}
-          <Menu shadow="md" width={200}>
-            <Menu.Target>
-              <ActionIcon 
-                variant="subtle" 
-                size="lg"
-                style={{ 
-                  color: '#b7c8c1',
-                  marginTop: '1.25rem',
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-              </ActionIcon>
-            </Menu.Target>
-            
-            <Menu.Dropdown>
-              <Menu.Label>{t.menu}</Menu.Label>
-              <Menu.Item 
-                color="red"
-                onClick={onReset}
-                leftSection={
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                  </svg>
-                }
-              >
-                {t.clearAll}
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+
+          <Burger
+            opened={mobileNavOpened}
+            onClick={toggleMobileNav}
+            color="#b7c8c1"
+            size="sm"
+            hiddenFrom="sm"
+          />
         </Group>
       </Group>
     </Box>
