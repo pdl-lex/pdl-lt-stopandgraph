@@ -205,8 +205,10 @@ export const getGraphStats = (graph: GraphData): {
   maxEdgeWeight: number;
   avgEdgeWeight: number;
 } => {
-  const maxNodeFrequency = Math.max(...graph.nodes.map(n => n.frequency), 0);
-  const maxEdgeWeight = Math.max(...graph.edges.map(e => e.weight), 0);
+  // reduce statt Math.max(...arr): Ein langer Text liefert zehntausende
+  // Knoten, und so viele Argumente überlaufen den Aufrufstapel.
+  const maxNodeFrequency = graph.nodes.reduce((max, n) => Math.max(max, n.frequency), 0);
+  const maxEdgeWeight = graph.edges.reduce((max, e) => Math.max(max, e.weight), 0);
   const avgEdgeWeight = graph.edges.length > 0
     ? graph.edges.reduce((sum, e) => sum + e.weight, 0) / graph.edges.length
     : 0;

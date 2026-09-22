@@ -1,5 +1,7 @@
 // Type definitions for the Knowledge Graph
 
+import type { GraphThemeName } from '../graph/graphThemes';
+
 export interface GraphNode {
   id: string;
   label: string;
@@ -60,6 +62,8 @@ export interface GraphDisplayConfig {
   minEdgeWeight: number;      // Filter out weak connections
   minNodeFrequency: number;   // Filter out rare words
   showLabels: boolean;
+  showEdgeLabels: boolean;    // Edge weight next to the line
+  theme: GraphThemeName;      // Canvas palette; 'auto' follows the UI theme
   nodeScaleRange: [number, number];  // Min/max node size
   edgeScaleRange: [number, number];  // Min/max edge thickness
 }
@@ -68,6 +72,8 @@ export const defaultGraphDisplayConfig: GraphDisplayConfig = {
   minEdgeWeight: 1,
   minNodeFrequency: 1,
   showLabels: true,
+  showEdgeLabels: true,
+  theme: 'auto',
   nodeScaleRange: [4, 24],
   edgeScaleRange: [0.5, 6],
 };

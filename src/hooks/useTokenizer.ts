@@ -13,11 +13,6 @@ export const resetTokenCounter = (): void => {
   tokenIdCounter = 0;
 };
 
-// Regex patterns
-const WORD_PATTERN = /[\p{L}\p{N}]+(?:[''][\p{L}]+)?/u; // Unicode letters/numbers, handles contractions
-const PUNCTUATION_PATTERN = /[^\p{L}\p{N}\s]/u; // Non-letter, non-number, non-whitespace
-const WHITESPACE_PATTERN = /\s+/;
-
 export const tokenizeText = (text: string, stopwords: Set<string>): Token[] => {
   resetTokenCounter();
   const tokens: Token[] = [];
@@ -70,16 +65,28 @@ export const tokenizeText = (text: string, stopwords: Set<string>): Token[] => {
   return tokens;
 };
 
-// Calculate word frequencies from tokens
-export const calculateFrequencies = (tokens: Token[]): Map<string, { word: string; count: number; isStopword: boolean }> => {
-  const frequencies = new Map<string, { word: string; count: number; isStopword: boolean }>();
-  
+export interface WordFrequencyEntry {
+  word: string;          // first spelling seen, for display
+  count: number;
+  isStopword: boolean;
+  isWord: boolean;       // false for punctuation
+}
+
+// Calculate frequencies from tokens.
+//
+// Punctuation is counted as well — `detectPunctuation` and the status bar
+// need it — but it is flagged, so the word cloud and the unique-word figure
+// can leave it out. Without that flag the cloud used to display "," and "."
+// among the most frequent "words".
+export const calculateFrequencies = (tokens: Token[]): Map<string, WordFrequencyEntry> => {
+  const frequencies = new Map<string, WordFrequencyEntry>();
+
   for (const token of tokens) {
     if (token.type === 'whitespace') continue;
-    
+
     const normalized = token.normalizedText;
     const existing = frequencies.get(normalized);
-    
+
     if (existing) {
       existing.count++;
       existing.isStopword = token.isStopword;
@@ -88,10 +95,11 @@ export const calculateFrequencies = (tokens: Token[]): Map<string, { word: strin
         word: token.text, // Keep original casing for display
         count: 1,
         isStopword: token.isStopword,
+        isWord: token.type === 'word',
       });
     }
   }
-  
+
   return frequencies;
 };
 

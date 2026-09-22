@@ -1,0 +1,82 @@
+/* Grundlagen aus dem Design-Handoff (pdl-lt-design/design_handoff_tools).
+
+   Die Werkbank ist ein CSS-Grid über die volle Fensterhöhe, deshalb hängt
+   alles von html bis #root auf 100 %. Der Korpus und der Graph scrollen
+   jeweils in ihrem eigenen Bereich, nicht die Seite als Ganzes. */
+
+/* Abgeleitetes Token, nicht aus dem Handoff: --lt-g-700 ist im hellen Modus
+   die kräftige Schrift auf --lt-primary-soft, im dunklen Modus wäre es
+   Dunkel auf Dunkel. tokens.css bleibt dafür unverändert. */
+:root { --lt-primary-strong: var(--lt-g-700); }
+[data-theme="dark"] { --lt-primary-strong: var(--lt-g-300); }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  font-family: var(--lt-font-sans);
+  font-size: var(--lt-text-base);
+  background: var(--lt-bg-1);
+  color: var(--lt-fg-1);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[data-theme="dark"] body { background: var(--lt-bg-1); color: var(--lt-fg-1); }
+
+button, input, select, textarea { font-family: inherit; }
+button { font-size: inherit; }
+
+/* Schlanke Scrollbalken im Werkzeug-Look */
+.lt-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.lt-scroll::-webkit-scrollbar-thumb {
+  background: var(--lt-line-2); border-radius: 5px;
+  border: 2px solid transparent; background-clip: content-box;
+}
+.lt-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Der Korpus: Fließtext in Serife, jedes Wort ein eigener Treffer-Bereich. */
+.corpus-text {
+  font-family: var(--lt-font-serif);
+  font-size: 15px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--lt-fg-1);
+}
+.corpus-word {
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color .12s ease, color .12s ease;
+}
+.corpus-word:hover { background: var(--lt-primary-soft); color: var(--lt-primary); }
+.corpus-word.is-hit { background: var(--lt-warn-soft); box-shadow: inset 0 -2px 0 var(--lt-warn-line); }
+.corpus-word.is-current { background: var(--lt-warn); color: var(--lt-bg-0); }
+.corpus-stop {
+  cursor: pointer;
+  color: var(--lt-fg-4);
+  user-select: none;
+  transition: color .12s ease;
+}
+.corpus-stop:hover { color: var(--lt-primary); }
+
+/* Wortwolke und Stopwort-Wolke */
+.cloud-word {
+  display: inline-block;
+  padding: 0.1em 0.32em;
+  cursor: pointer;
+  line-height: 1.25;
+  border-radius: var(--lt-r-xs);
+  transition: background-color .12s ease, color .12s ease;
+}
+.cloud-word:hover { background: var(--lt-primary-soft); color: var(--lt-primary); }
+
+/* Der Graph zeichnet sich in ein SVG; die Farben kommen als echte Hexwerte
+   aus graphThemes.ts, damit ein exportiertes SVG für sich allein steht. */
+.graph-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.graph-canvas text { user-select: none; pointer-events: none; }
+.graph-canvas .node { cursor: pointer; }
+
+/* Tabellenzeilen der Stopwortliste */
+.lt-row:hover { background: var(--lt-bg-1); }

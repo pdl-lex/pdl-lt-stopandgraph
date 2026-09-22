@@ -1,211 +1,121 @@
-# BAdW Visualisierungstools - Style Guide
+# Style Guide — LexoTerm Tools (Werkbank)
 
-## Technologie-Stack
-- **Framework:** React 19 + TypeScript
-- **Build Tool:** Vite
-- **UI Library:** Mantine v8
-- **Styling:** Mantine's built-in styling + inline styles
+Die verbindliche Vorgabe ist der Design-Handoff in
+`pdl-lt-design/design_handoff_tools`. Dieses Dokument hält fest, wie er in
+diesem Repo umgesetzt ist — es ersetzt ihn nicht.
 
-## Farbschema (Evergreen)
+## Technologie
 
-```typescript
-const colors = {
-  // Hauptfarben
-  evergreen: '#003835',      // Primär, dunkel
-  springLeaves: '#006844',   // Sekundär, mittel
-  lightMint: '#b7c8c1',      // Akzent, hell
-  
-  // Hintergründe
-  pageBg: '#f5f7f6',         // Seiten-Hintergrund
-  panelBg: '#f8faf9',        // Panel-Header
-  
-  // Grautöne
-  white: '#ffffff',
-  black: '#1a1a1a',
-  dimmed: '#999999',
-  
-  // Semantisch
-  error: '#c92a2a',          // Für Stopwords/Löschen
-};
+- React 19 + TypeScript, Vite
+- **Keine UI-Bibliothek.** Die Bausteine stehen in `src/design/`; sie sind
+  klein genug, um sie zu lesen, und hängen an nichts außer den Tokens.
+- D3 nur für die Kräftesimulation der Zeichenfläche
+
+## Farben: ausschließlich Tokens
+
+`src/styles/tokens.css` ist unverändert aus dem Handoff übernommen und die
+Quelle der Wahrheit. **Fest verdrahtete Hexwerte in Komponenten sind ein
+Fehler** — sie brechen den dunklen Modus.
+
+```tsx
+// richtig
+<div style={{ background: 'var(--lt-bg-0)', color: 'var(--lt-fg-1)' }} />
+
+// falsch
+<div style={{ background: '#ffffff', color: '#1a1a1a' }} />
 ```
 
-## Mantine Theme-Konfiguration
+Kern der Palette:
 
-```typescript
-const evergreen: MantineColorsTuple = [
-  '#e6f2f1', // 0 - lightest
-  '#b7c8c1', // 1 - Light Mint
-  '#8aada3', // 2
-  '#5d9285', // 3
-  '#307767', // 4
-  '#006844', // 5 - Spring Leaves
-  '#005a3b', // 6
-  '#004c32', // 7
-  '#003835', // 8 - Evergreen (main)
-  '#002a28', // 9 - darkest
-];
+| Zweck | Token |
+| --- | --- |
+| Flächen | `--lt-bg-0` (Karten) · `--lt-bg-1` (Seite) · `--lt-bg-2` (Konfigurator) |
+| Linien | `--lt-line-1` · `--lt-line-2` · `--lt-line-3` |
+| Text | `--lt-fg-1` … `--lt-fg-4` |
+| Primär | `--lt-primary`, `--lt-primary-soft`, `--lt-primary-line`, `--lt-on-primary` |
+| Status | `--lt-warn` · `--lt-err` · `--lt-info` (je `-soft` / `-line`) |
+| Radien | `--lt-r-xs` 3 · `sm` 5 · `md` 7 · `lg` 10 · `xl` 14 |
+| Schatten | `--lt-shadow-1` · `-2` · `-pop` |
 
-// primaryColor: 'evergreen'
-// defaultRadius: 'sm'
-```
+Eine einzige Ergänzung steht in `app.css`: `--lt-primary-strong`. Im hellen
+Modus ist das `--lt-g-700`, im dunklen `--lt-g-300` — kräftige Schrift auf
+`--lt-primary-soft` wäre sonst im dunklen Modus Dunkel auf Dunkel.
+
+### Ausnahme: die Zeichenfläche
+
+`src/graph/graphThemes.ts` führt **echte Hexwerte**, und das bleibt so: Ein
+exportiertes SVG steht für sich allein, in einer Bilddatei löst
+`var(--lt-bg-0)` nichts mehr auf. Dasselbe bei PNG — `ctx.fillStyle =
+'var(...)'` ist wirkungslos.
 
 ## Typografie
 
-- **Schriften:** Noto Sans (UI), Noto Serif (Inhalte/Korpus)
-- **Google Fonts Import:**
-```html
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&display=swap" rel="stylesheet">
-```
+- **Noto Sans** — Oberfläche
+- **Noto Sans Mono** — Kennzahlen, Dateinamen, Kürzel, Tastenbadges
+  (`.lt-mono`, `--lt-font-mono`)
+- **Noto Serif** — der Korpus selbst (`.corpus-text`)
 
-### Verwendung:
-- **UI-Elemente:** `fontFamily: '"Noto Sans", sans-serif'`
-- **Textinhalte/Korpus:** `fontFamily: '"Noto Serif", Georgia, serif'`
-- **Überschriften:** Noto Serif, fontWeight 600
+Größen: Kopfzeile und Werkzeugleisten 13, Fließtext der Bedienung 12–12,5,
+Mono-Abzeichen 10,5–11, Eyebrow 10–11 in Versalien (`.lt-eyebrow`).
 
-## Komponenten-Patterns
-
-### Panel-Struktur
-```tsx
-<Paper
-  shadow="sm"
-  style={{
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    border: '1px solid #b7c8c1',
-  }}
->
-  {/* Header */}
-  <Box
-    p="sm"
-    style={{
-      borderBottom: '1px solid #b7c8c1',
-      backgroundColor: '#f8faf9',
-    }}
-  >
-    <Title order={4} style={{ color: '#003835' }}>
-      Panel-Titel
-    </Title>
-  </Box>
-  
-  {/* Scrollbarer Inhalt */}
-  <ScrollArea style={{ flex: 1 }} p="md">
-    {/* Inhalt */}
-  </ScrollArea>
-  
-  {/* Optional: Footer */}
-  <Box
-    p="xs"
-    style={{
-      borderTop: '1px solid #b7c8c1',
-      backgroundColor: '#f8faf9',
-    }}
-  >
-    <Text size="xs" c="dimmed" ta="center">
-      Hilfetext
-    </Text>
-  </Box>
-</Paper>
-```
-
-### Header mit Gradient
-```tsx
-<Box
-  style={{
-    background: 'linear-gradient(135deg, #003835 0%, #006844 100%)',
-    padding: '1rem 1.5rem',
-    borderBottom: '1px solid rgba(183, 200, 193, 0.2)',
-  }}
->
-  <Title style={{ color: '#fff' }}>Titel</Title>
-</Box>
-```
-
-### Buttons
-- **Primär:** `variant="filled" color="teal"`
-- **Sekundär:** `variant="outline" color="teal"`
-- **Deaktiviert:** `variant="outline" color="gray" disabled`
-- **Subtle:** `variant="subtle" color="gray"`
-
-### Interaktive Elemente
-```tsx
-// Hover-Effekt für klickbare Wörter
-style={{
-  cursor: 'pointer',
-  transition: 'all 0.15s ease',
-}}
-onMouseEnter={(e) => {
-  e.currentTarget.style.backgroundColor = 'rgba(0, 104, 68, 0.1)';
-}}
-onMouseLeave={(e) => {
-  e.currentTarget.style.backgroundColor = 'transparent';
-}}
-```
-
-## Layout-Patterns
-
-### Hauptlayout
-```tsx
-<Box style={{ minHeight: '100vh', backgroundColor: '#f5f7f6' }}>
-  <Header />
-  <Box p="md">
-    <Stack gap="md">
-      <Instructions />
-      <ActionBar />
-      <Grid gutter="md">
-        <Grid.Col span={7}>{/* Hauptinhalt */}</Grid.Col>
-        <Grid.Col span={5}>{/* Seitenleiste */}</Grid.Col>
-      </Grid>
-    </Stack>
-  </Box>
-</Box>
-```
-
-## Multi-Language (i18n)
-
-Struktur in `src/config/i18n.ts`:
-```typescript
-export type UILanguage = 'de' | 'en';
-
-export interface Translations {
-  appTitle: string;
-  // ... weitere Keys
-}
-
-export const translations: Record<UILanguage, Translations> = {
-  de: { /* ... */ },
-  en: { /* ... */ },
-};
-
-export const getTranslation = (lang: UILanguage): Translations => {
-  return translations[lang] || translations.en;
-};
-```
-
-## Dateistruktur
+## Raster
 
 ```
-src/
-├── components/     # React-Komponenten
-├── config/         # i18n.ts, theme.ts
-├── data/           # Statische Daten (z.B. Stopword-Listen)
-├── hooks/          # Custom Hooks, State-Management
-├── types/          # TypeScript-Definitionen
-└── App.tsx         # Haupt-App
+Kopfzeile   44 px
+Leiste      56 px eingeklappt ↔ 248 px angeheftet
+Konfigurator 380 px
+Statuszeile 32 px
 ```
 
-## Wichtige Mantine v8 Hinweise
+Drei Anordnungen (`gridFor` in `App.tsx`):
 
-- **Textarea autosize:** Keine `minHeight` in styles verwenden, stattdessen `minRows`/`maxRows`
-- **Styles-Prop:** Verschachtelte Selektoren wie `'&:focus'` funktionieren nicht immer, besser separate Handler
-- **PostCSS:** `postcss-preset-mantine` und `postcss-simple-vars` erforderlich
+| Modus | Spalten | Bereiche |
+| --- | --- | --- |
+| `left` | `rail 380px 1fr` | `head / rail cfg main / stat` |
+| `right` | `rail 1fr 380px` | `head / rail main cfg / stat` |
+| `bottom` | `rail 1fr` | `head / rail cfg / rail main / stat` |
 
-## Bestehende Komponenten (Stopword-Tool)
+Unter 640 px (`useIsMobile`) gilt die gestapelte Mobil-Ansicht.
 
-1. **Header** - mit Sprachauswahl und Menü
-2. **Instructions** - Anleitungstext mit Stats-Badges
-3. **CorpusPanel** - Scrollbarer Text mit klickbaren Tokens
-4. **WordCloudPanel** - Interaktive Word Cloud
-5. **StopwordsPanel** - Liste/Cloud-Toggle für markierte Wörter
-6. **ActionBar** - Upload, Download, Standard-Listen
-7. **TextInputPanel** - Textarea für Texteingabe
+## Bausteine
+
+| Baustein | Datei | Wofür |
+| --- | --- | --- |
+| `Card`, `Panel`, `SectionFold` | `design/ui.tsx` | Flächen, Panels mit Kopfzeile, aufklappbare Sektionen |
+| `PrimaryButton`, `GhostButton`, `IconButton` | `design/ui.tsx` | Aktion gefüllt, Konfiguration umrandet |
+| `Field`, `TextInput`, `NumberInput`, `Select`, `Toggle`, `RangeSlider` | `design/ui.tsx` | Eingaben |
+| `Pill`, `Badge`, `MonoBadge`, `Callout`, `Eyebrow`, `EmptyState` | `design/ui.tsx` | Auszeichnungen |
+| `Dialog`, `FilePicker` | `design/ui.tsx` | Modal, Dateiwahl |
+| `Sparkbars`, `HBar`, `Segmented`, `Kbd` | `design/widgets.tsx` | Mini-Charts, Umschalter |
+| `Icon`, `Logo` | `design/icons.tsx` | dünnstrichiges SVG-Set |
+| `Stat`, `StatStrip` | `panes/StatStrip.tsx` | Kennzahlen über der Ergebnisfläche |
+
+**Konvention:** Aktionen sind gefüllt (`PrimaryButton`), Konfiguration ist
+umrandet (`GhostButton`). Sparkbars im Kennzahlen-Strip sind interaktiv: Ein
+Klick auf einen Balken setzt einen Filter oder schließt ein Wort aus.
+
+## Zustand
+
+Alles Gemeinsame steht im Werkbank-Kontext (`state/`); örtlicher Zustand —
+Suchfeld, Seitenzahl, aufgeklappte Sektion — bleibt in der Komponente.
+Gespeichert werden nur Sprache, Theme und Anordnung (`lt.language`,
+`lt.theme`, `lt.layout`).
+
+Die Typen und der Hook liegen in `workbench.ts`, der Provider daneben in
+`WorkbenchProvider.tsx`: Ein Modul, das eine Komponente ausführt, soll nichts
+anderes ausführen — sonst greift Fast Refresh nicht.
+
+## Mehrsprachigkeit
+
+`src/config/i18n.ts` trägt einen einzigen Schlüsselsatz für DE und EN. Neue
+Zeichenketten kommen in die `Translations`-Schnittstelle und damit in beide
+Sprachen — TypeScript erzwingt die Vollständigkeit. Zahlen laufen über
+`formatNumber(wert, sprache)`, damit 30.513 nicht als 30,513 erscheint.
+
+## Was nicht zu tun ist
+
+- Keine Hexwerte außerhalb von `graphThemes.ts`
+- `tokens.css` nicht ändern — Ergänzungen gehören in `app.css`
+- Keine deutschen Festtexte in Komponenten; alles über `t.*`
+- `Math.max(...array)` nicht auf Token- oder Knotenlisten anwenden; ein langer
+  Text sprengt damit den Aufrufstapel (`reduce` verwenden)

@@ -8,19 +8,6 @@ export interface Token {
   normalizedText: string; // lowercase for comparison
 }
 
-export interface WordFrequency {
-  word: string;
-  normalizedWord: string;
-  count: number;
-  isStopword: boolean;
-}
-
-export interface AppState {
-  tokens: Token[];
-  stopwords: Set<string>; // normalized (lowercase) words
-  rawText: string;
-}
-
 export type PlaceholderStyle = 'underscore' | 'dot' | 'dash' | 'hidden';
 
 export const placeholderChars: Record<PlaceholderStyle, string> = {
